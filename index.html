@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
+    <title>DKB Mall - Admin Console</title>
+    
+    <link rel="icon" type="image/png" href="favicon.png">
+
+    <style>
+        :root {
+            --primary-pink: #ff69b4; 
+            --dark-pink: #ff1493; 
+            --light-pink: #ffe4e1; 
+            --bg-color: #f4f7f6; 
+            --text-dark: #333333;
+            --text-light: #ffffff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-dark); display: flex; flex-direction: column; min-height: 100vh; }
+
+        header {
+            background: linear-gradient(135deg, #000080 0%, #ffffff 180%);
+            color: var(--text-light); padding: 15px 40px;
+            display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        .logo-container { display: flex; align-items: center; gap: 12px; }
+        .site-logo { width: 40px; height: 40px; stroke: var(--text-light); }
+
+        header h1 { 
+            font-family: 'Footlight MT Light', cursive; 
+            font-weight: bold; font-size: 26px; letter-spacing: 1px; margin: 0; 
+        }
+
+        .header-actions { display: flex; align-items: center; gap: 15px; }
+        .btn-logout {
+            background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid white; padding: 8px 15px;
+            border-radius: 25px; cursor: pointer; font-weight: bold; transition: 0.3s; display: none;
+        }
+        .btn-logout:hover { background: white; color: #000080; }
+
+        /* Login Screen Styles */
+        .login-container {
+            flex: 1; display: flex; justify-content: center; align-items: center; padding: 20px;
+        }
+        .login-box {
+            background: white; padding: 40px 30px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%; max-width: 400px; text-align: center;
+        }
+        .login-box h2 { color: #000080; margin-bottom: 20px; }
+        .login-box p { color: #888; font-size: 14px; margin-bottom: 20px; }
+        .error-msg { color: #ff4444; font-size: 14px; margin-top: 10px; display: none; font-weight: bold; }
+
+        /* Dashboard Styles (Hidden by default) */
+        .container { 
+            max-width: 1200px; margin: 30px auto; padding: 0 20px; width: 100%; gap: 30px; flex-wrap: wrap;
+            display: none; /* Initially hidden */
+        }
+
+        /* Form Panel */
+        .admin-panel {
+            background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            flex: 1; min-width: 300px; height: fit-content;
+        }
+        .admin-panel h2 { color: #000080; margin-bottom: 20px; border-bottom: 2px solid var(--light-pink); padding-bottom: 10px; }
+        
+        .form-group { margin-bottom: 15px; text-align: left; }
+        .form-group label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #555; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; outline: none; transition: 0.3s;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary-pink); }
+        
+        .image-preview-container { text-align: center; margin-top: 10px; }
+        .image-preview-container img { max-width: 100%; max-height: 200px; border-radius: 5px; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+        .btn-submit {
+            background: var(--dark-pink); color: white; border: none; padding: 12px; width: 100%;
+            border-radius: 5px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 16px; margin-top: 10px;
+        }
+        .btn-submit:hover { background: #000080; }
+        .btn-cancel {
+            background: #ccc; color: #333; border: none; padding: 12px; width: 100%; margin-top: 10px;
+            border-radius: 5px; font-weight: bold; cursor: pointer; display: none;
+        }
+
+        /* Products Table */
+        .table-panel {
+            background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            flex: 2; min-width: 600px; overflow-x: auto;
+        }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; vertical-align: middle; }
+        th { background: #f8f9fa; color: #000080; }
+        
+        .thumbnail { width: 50px; height: 50px; object-fit: cover; border-radius: 5px; background: #eee; }
+
+        .action-btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .btn-edit { background: var(--primary-pink); color: white; margin-right: 5px; }
+        .btn-delete { background: #ff4444; color: white; }
+        
+        @media (max-width: 768px) {
+            header { flex-direction: column; gap: 15px; text-align: center; }
+            .container { flex-direction: column; display: none; }
+            .table-panel { min-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-container">
+            <svg class="site-logo" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <path d="M16 10a4 4 0 0 1-8 0"></path>
+            </svg>
+            <h1>DKB Mall Admin</h1>
+        </div>
+        <div class="header-actions">
+            <div style="font-weight: bold; display: none;" id="dashboard-title">Inventory Manager</div>
+            <button id="btn-logout" class="btn-logout" onclick="window.logoutAdmin()">Logout</button>
+        </div>
+    </header>
+
+    <!-- Secure Login Screen -->
+    <div class="login-container" id="login-container">
+        <div class="login-box">
+            <h2>Admin Sign In</h2>
+            <p>Enter your credentials to access the inventory manager.</p>
+            <form id="login-form" onsubmit="event.preventDefault(); window.loginAdmin();">
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="login-email" required placeholder="admin@dkbmall.com">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="login-password" required placeholder="••••••••">
+                </div>
+                <button type="submit" id="btn-login-submit" class="btn-submit">Login</button>
+                <div class="error-msg" id="login-error">Invalid email or password.</div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard (Hidden behind Auth) -->
+    <div class="container" id="admin-dashboard">
+        <!-- Form to Add/Edit Products -->
+        <div class="admin-panel">
+            <h2 id="form-title">Add New Product</h2>
+            <form id="product-form" onsubmit="event.preventDefault(); window.saveProduct();">
+                <input type="hidden" id="product-id">
+                
+                <div class="form-group">
+                    <label>Product Title</label>
+                    <input type="text" id="title" required placeholder="E.g., Floral Summer Dress">
+                </div>
+                
+                <div class="form-group">
+                    <label>Price (GH₵)</label>
+                    <input type="number" id="price" required step="0.01" placeholder="0.00">
+                </div>
+                
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="category" required>
+                        <option value="Ladies Wear">Ladies Wear</option>
+                        <option value="African Wear">African Wear</option>
+                        <option value="Kids Wear">Kids Wear</option>
+                        <option value="Gents Wear">Gents Wear</option>
+                        <option value="Ladies Bags">Ladies Bags</option>
+                        <option value="Accessories">Accessories</option>
+                        <option value="Shoes">Shoes</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Sub-Category (Optional)</label>
+                    <select id="subCategory">
+                        <option value="">None</option>
+                        <option value="Ladies">Ladies</option>
+                        <option value="Gents">Gents</option>
+                        <option value="Kids">Kids</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Product Image</label>
+                    <input type="file" id="imageFile" accept="image/*" onchange="window.previewAndConvertImage(event)">
+                    <div id="image-status" style="font-size: 12px; color: #ff1493; margin-top: 5px; font-weight: bold;"></div>
+                    <input type="hidden" id="base64-image-data">
+                    <div class="image-preview-container">
+                        <img id="img-preview" src="" alt="Image Preview">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Available Sizes (Comma separated)</label>
+                    <input type="text" id="sizes" required placeholder="S, M, L, XL">
+                </div>
+                
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="desc" rows="3" required placeholder="Product details..."></textarea>
+                </div>
+                
+                <button type="submit" id="btn-save" class="btn-submit">Save Product</button>
+                <button type="button" id="btn-cancel" class="btn-cancel" onclick="window.resetForm()">Cancel Edit</button>
+            </form>
+        </div>
+
+        <!-- Product List Table -->
+        <div class="table-panel">
+            <h2>Current Inventory <span id="inventory-count" style="font-size:14px; color:gray;">(0 items)</span></h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Image</th>
+                        <th>Title</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="product-list">
+                    <tr><td colspan="5" style="text-align: center;">Loading inventory...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        // NEW: Import Firebase Authentication
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBew01ydDHI8QSCAi7Axk0MEZftDjTpT2w",
+            authDomain: "davelyn-collection.firebaseapp.com",
+            projectId: "davelyn-collection",
+            storageBucket: "davelyn-collection.firebasestorage.app",
+            messagingSenderId: "834458468658",
+            appId: "1:834458468658:web:aa96124886b0b0915a572b",
+            measurementId: "G-9P8G8DBYD4"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app); // Initialize Authentication
+        
+        let allProducts = [];
+
+        // --- AUTHENTICATION LOGIC ---
+
+        // Listen for Login State Changes
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // User is logged in: Show dashboard, hide login
+                document.getElementById('login-container').style.display = 'none';
+                document.getElementById('admin-dashboard').style.display = 'flex';
+                document.getElementById('btn-logout').style.display = 'block';
+                document.getElementById('dashboard-title').style.display = 'block';
+                
+                // Fetch products only after we know they are logged in
+                window.fetchProducts();
+            } else {
+                // User is logged out: Show login, hide dashboard
+                document.getElementById('login-container').style.display = 'flex';
+                document.getElementById('admin-dashboard').style.display = 'none';
+                document.getElementById('btn-logout').style.display = 'none';
+                document.getElementById('dashboard-title').style.display = 'none';
+                
+                // Reset login form text just in case
+                document.getElementById('btn-login-submit').innerText = "Login";
+                document.getElementById('btn-login-submit').disabled = false;
+            }
+        });
+
+        window.loginAdmin = async function() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const btn = document.getElementById('btn-login-submit');
+            const errorMsg = document.getElementById('login-error');
+            
+            btn.innerText = "Authenticating... ⏳";
+            btn.disabled = true;
+            errorMsg.style.display = "none";
+
+            try {
+                // This will trigger onAuthStateChanged above if successful
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                console.error("Login failed: ", error);
+                errorMsg.innerText = "Invalid email or password.";
+                errorMsg.style.display = "block";
+                btn.innerText = "Login";
+                btn.disabled = false;
+            }
+        };
+
+        window.logoutAdmin = function() {
+            signOut(auth).then(() => {
+                document.getElementById('login-form').reset();
+            }).catch((error) => {
+                console.error("Error signing out: ", error);
+            });
+        };
+
+        // --- INVENTORY LOGIC ---
+
+        window.previewAndConvertImage = function(event) {
+            const file = event.target.files[0];
+            const statusLabel = document.getElementById('image-status');
+            
+            if (file) {
+                statusLabel.innerText = "Converting to WebP... ⏳";
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        const MAX_SIZE = 800;
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        if (width > height && width > MAX_SIZE) {
+                            height *= MAX_SIZE / width;
+                            width = MAX_SIZE;
+                        } else if (height > MAX_SIZE) {
+                            width *= MAX_SIZE / height;
+                            height = MAX_SIZE;
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        ctx.drawImage(img, 0, 0, width, height);
+                        const webpBase64 = canvas.toDataURL('image/webp', 0.8);
+                        
+                        const previewImg = document.getElementById('img-preview');
+                        previewImg.src = webpBase64;
+                        previewImg.style.display = 'inline-block';
+                        
+                        document.getElementById('base64-image-data').value = webpBase64;
+                        
+                        const sizeKB = Math.round((webpBase64.length * 0.75) / 1024);
+                        statusLabel.innerText = `Optimized! WebP Size: ${sizeKB} KB ✅`;
+                    };
+                    img.src = e.target.result;
+                }
+                reader.readAsDataURL(file);
+            }
+        };
+
+        window.fetchProducts = async function() {
+            const listEl = document.getElementById('product-list');
+            listEl.innerHTML = '<tr><td colspan="5" style="text-align: center;">Loading inventory...</td></tr>';
+            
+            try {
+                const querySnapshot = await getDocs(collection(db, "products"));
+                allProducts = [];
+                querySnapshot.forEach((doc) => {
+                    allProducts.push({ id: doc.id, ...doc.data() });
+                });
+                
+                document.getElementById('inventory-count').innerText = `(${allProducts.length} items)`;
+                
+                if(allProducts.length === 0) {
+                    listEl.innerHTML = '<tr><td colspan="5" style="text-align: center;">No products found in database. Add one to get started.</td></tr>';
+                    return;
+                }
+
+                listEl.innerHTML = '';
+                allProducts.forEach(prod => {
+                    const imgSrc = prod.imageUrl ? prod.imageUrl : 'https://via.placeholder.com/50';
+                    listEl.innerHTML += `
+                        <tr>
+                            <td><img src="${imgSrc}" class="thumbnail" alt="Product"></td>
+                            <td><strong>${prod.title}</strong></td>
+                            <td>${prod.category}</td>
+                            <td>GH₵ ${prod.price.toFixed(2)}</td>
+                            <td>
+                                <button class="action-btn btn-edit" onclick="window.editProduct('${prod.id}')">Edit</button>
+                                <button class="action-btn btn-delete" onclick="window.deleteProduct('${prod.id}')">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (error) {
+                console.error("Error fetching products: ", error);
+                listEl.innerHTML = '<tr><td colspan="5" style="text-align: center; color: red;">Error loading database. Check permissions.</td></tr>';
+            }
+        };
+
+        window.saveProduct = async function() {
+            const btn = document.getElementById('btn-save');
+            btn.innerText = "Saving to Database...";
+            btn.disabled = true;
+
+            const id = document.getElementById('product-id').value;
+            const sizeString = document.getElementById('sizes').value;
+            const sizeArray = sizeString.split(',').map(s => s.trim()).filter(s => s !== "");
+            
+            const base64ImageData = document.getElementById('base64-image-data').value;
+
+            if (!id && !base64ImageData) {
+                alert("Please select a product image!");
+                btn.innerText = "Save Product";
+                btn.disabled = false;
+                return;
+            }
+
+            const productData = {
+                title: document.getElementById('title').value,
+                price: parseFloat(document.getElementById('price').value),
+                category: document.getElementById('category').value,
+                subCategory: document.getElementById('subCategory').value,
+                imageUrl: base64ImageData, 
+                sizes: sizeArray,
+                desc: document.getElementById('desc').value
+            };
+
+            try {
+                if (id) {
+                    await updateDoc(doc(db, "products", id), productData);
+                    alert("Product updated successfully!");
+                } else {
+                    await addDoc(collection(db, "products"), productData);
+                    alert("Product added successfully!");
+                }
+                
+                window.resetForm();
+                window.fetchProducts();
+            } catch (error) {
+                console.error("Error saving product: ", error);
+                if (error.message && error.message.includes('maximum')) {
+                     alert("Error: The image file size is too large for the database. Please try another image.");
+                } else {
+                     alert("Error saving product to the database.");
+                }
+            } finally {
+                btn.innerText = id ? "Update Product" : "Save Product";
+                btn.disabled = false;
+            }
+        };
+
+        window.editProduct = function(id) {
+            const prod = allProducts.find(p => p.id === id);
+            if(!prod) return;
+
+            document.getElementById('form-title').innerText = "Edit Product";
+            document.getElementById('product-id').value = prod.id;
+            document.getElementById('title').value = prod.title;
+            document.getElementById('price').value = prod.price;
+            document.getElementById('category').value = prod.category;
+            document.getElementById('subCategory').value = prod.subCategory || "";
+            document.getElementById('desc').value = prod.desc;
+            document.getElementById('sizes').value = prod.sizes.join(', ');
+
+            document.getElementById('base64-image-data').value = prod.imageUrl || "";
+            const imgPreview = document.getElementById('img-preview');
+            if (prod.imageUrl) {
+                imgPreview.src = prod.imageUrl;
+                imgPreview.style.display = 'inline-block';
+            } else {
+                imgPreview.style.display = 'none';
+            }
+            
+            document.getElementById('image-status').innerText = "";
+
+            document.getElementById('btn-save').innerText = "Update Product";
+            document.getElementById('btn-cancel').style.display = "block";
+            window.scrollTo(0,0);
+        };
+
+        window.deleteProduct = async function(id) {
+            if(confirm("Are you sure you want to delete this product?")) {
+                try {
+                    await deleteDoc(doc(db, "products", id));
+                    window.fetchProducts();
+                } catch (error) {
+                    console.error("Error deleting: ", error);
+                    alert("Failed to delete product.");
+                }
+            }
+        };
+
+        window.resetForm = function() {
+            document.getElementById('product-form').reset();
+            document.getElementById('product-id').value = "";
+            document.getElementById('base64-image-data').value = "";
+            document.getElementById('img-preview').style.display = "none";
+            document.getElementById('img-preview').src = "";
+            document.getElementById('image-status').innerText = "";
+            document.getElementById('form-title').innerText = "Add New Product";
+            document.getElementById('btn-save').innerText = "Save Product";
+            document.getElementById('btn-cancel').style.display = "none";
+        };
+
+        // Register Service Worker for Admin PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Admin Service Worker registered!'))
+                    .catch(err => console.log('Service Worker registration failed: ', err));
+            });
+        }
+    </script>
+</body>
+</html>
