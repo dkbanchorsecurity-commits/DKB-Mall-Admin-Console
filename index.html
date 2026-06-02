@@ -6,7 +6,7 @@
     <title>DKB Mall - Admin Console</title>
     
     <link rel="icon" type="image/png" href="favicon.png">
- <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0A2540">
     <link rel="apple-touch-icon" href="https://via.placeholder.com/192x192/051424/D4AF37?text=DKB">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -39,6 +39,26 @@
         }
 
         .header-actions { display: flex; align-items: center; gap: 15px; }
+        
+        /* PWA Install Button Styles */
+        .btn-install {
+            background: var(--dark-pink); 
+            color: white; 
+            border: 1px solid var(--dark-pink); 
+            padding: 8px 15px;
+            border-radius: 25px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            transition: 0.3s;
+            box-shadow: 0 2px 5px rgba(255, 20, 147, 0.3);
+            display: none; /* Hidden by default */
+        }
+        .btn-install:hover { 
+            background: white; 
+            color: var(--dark-pink); 
+            transform: translateY(-1px);
+        }
+
         .btn-logout {
             background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid white; padding: 8px 15px;
             border-radius: 25px; cursor: pointer; font-weight: bold; transition: 0.3s; display: none;
@@ -63,7 +83,7 @@
             display: none; 
         }
 
-        /* UPDATED: Form Modal Pop-up Layout */
+        /* Form Modal Pop-up Layout */
         .admin-form-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.6); z-index: 1000;
@@ -98,7 +118,6 @@
         }
         .btn-submit:hover { background: #000080; }
         
-        /* NEW: Add Product Action Button */
         .table-header-row {
             display: flex; justify-content: space-between; align-items: center;
             width: 100%; border-bottom: 2px solid var(--light-pink); padding-bottom: 12px; margin-bottom: 15px;
@@ -110,7 +129,6 @@
         }
         .btn-add-product:hover { background: #000080; transform: translateY(-1px); }
 
-        /* Products Table Panel Layout (Now Full Width) */
         .table-panel {
             background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
             flex: 1; min-width: 100%; overflow-x: auto;
@@ -143,6 +161,7 @@
         </div>
         <div class="header-actions">
             <div style="font-weight: bold; display: none;" id="dashboard-title">Inventory Manager</div>
+            <button id="btn-install" class="btn-install">⬇️ Install App</button>
             <button id="btn-logout" class="btn-logout" onclick="window.logoutAdmin()">Logout</button>
         </div>
     </header>
@@ -167,7 +186,6 @@
     </div>
 
     <div class="container" id="admin-dashboard">
-        
         <div class="table-panel">
             <div class="table-header-row">
                 <h2>Current Inventory <span id="inventory-count" style="font-size:14px; color:gray;">(0 items)</span></h2>
@@ -217,6 +235,7 @@
                         <option value="Ladies Bags">Ladies Bags</option>
                         <option value="Accessories">Accessories</option>
                         <option value="Shoes">Shoes</option>
+                        <option value="Wigs">Wigs</option>
                     </select>
                 </div>
                 
@@ -284,6 +303,39 @@
                     .catch(err => console.log('Service Worker registration failed: ', err));
             });
         }
+
+        // ==========================================
+        // PWA Installation Logic
+        // ==========================================
+        let deferredPrompt;
+        const installBtn = document.getElementById('btn-install');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent default infobar
+            e.preventDefault();
+            // Stash the event
+            deferredPrompt = e;
+            // Update UI to notify user they can install
+            installBtn.style.display = 'block';
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            // Show prompt
+            deferredPrompt.prompt();
+            // Wait for user choice
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response to the install prompt: ${outcome}`);
+            deferredPrompt = null;
+            installBtn.style.display = 'none';
+        });
+
+        window.addEventListener('appinstalled', () => {
+            installBtn.style.display = 'none';
+            deferredPrompt = null;
+            console.log('DKB Mall Admin PWA successfully installed.');
+        });
+        // ==========================================
 
         // Authentication Observer
         onAuthStateChanged(auth, (user) => {
@@ -517,13 +569,6 @@
             document.getElementById('img-preview').style.display = "none";
             document.getElementById('image-status').innerText = "";
         };
-         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('Service Worker registered successfully!'))
-                    .catch(err => console.log('Service Worker registration failed: ', err));
-            });
-        }
     </script>
 </body>
 </html>
