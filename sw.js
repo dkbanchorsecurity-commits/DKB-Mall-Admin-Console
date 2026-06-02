@@ -1,5 +1,5 @@
-const CACHE_NAME = 'dkbmall-v1';
-const ASSETS = [
+const CACHE_NAME = 'dkb-admin-cache-v1';
+const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
@@ -7,20 +7,39 @@ const ASSETS = [
   '/favicon.png'
 ];
 
-// Install Service Worker
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
-    })
+// Install the service worker and cache essential files
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        return cache.addAll(urlsToCache);
+      })
   );
 });
 
-// Fetch Assets
-self.addEventListener('fetch', (e) => {
-  e.respondWith(
-    caches.match(e.request).then((response) => {
-      return response || fetch(e.request);
+// Intercept network requests and serve from cache if available
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        // Return cached version or fetch from network
+        return response || fetch(event.request);
+      })
+  );
+});
+
+// Update the service worker and clear old caches
+self.addEventListener('activate', event => {
+  const cacheWhitelist = [CACHE_NAME];
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheWhitelist.indexOf(cacheName) === -1) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
     })
   );
 });
