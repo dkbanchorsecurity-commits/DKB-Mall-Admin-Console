@@ -210,7 +210,7 @@
 
     <div class="admin-form-overlay" id="admin-form-overlay" onclick="window.closeFormOnOutsideClick(event)">
         <div class="admin-panel">
-            <span class="close-form-btn" onclick="window.resetForm()">&times;</span>
+            <span class="close-form-btn" onclick="window.closeModal()">&times;</span>
             <h2 id="form-title">Add New Product</h2>
             <form id="product-form" onsubmit="event.preventDefault(); window.saveProduct();">
                 <input type="hidden" id="product-id">
@@ -235,8 +235,7 @@
                         <option value="Ladies Bags">Ladies Bags</option>
                         <option value="Accessories">Accessories</option>
                         <option value="Shoes">Shoes</option>
-                        <option value="Wigs">Wigs</option>
-                    </select>
+                        <option value="Wigs">Wigs</option> </select>
                 </div>
                 
                 <div class="form-group">
@@ -311,19 +310,14 @@
         const installBtn = document.getElementById('btn-install');
 
         window.addEventListener('beforeinstallprompt', (e) => {
-            // Prevent default infobar
             e.preventDefault();
-            // Stash the event
             deferredPrompt = e;
-            // Update UI to notify user they can install
             installBtn.style.display = 'block';
         });
 
         installBtn.addEventListener('click', async () => {
             if (!deferredPrompt) return;
-            // Show prompt
             deferredPrompt.prompt();
-            // Wait for user choice
             const { outcome } = await deferredPrompt.userChoice;
             console.log(`User response to the install prompt: ${outcome}`);
             deferredPrompt = null;
@@ -350,7 +344,7 @@
                 document.getElementById('admin-dashboard').style.display = 'none';
                 document.getElementById('btn-logout').style.display = 'none';
                 document.getElementById('dashboard-title').style.display = 'none';
-                window.resetForm();
+                window.forceCloseFormUI();
             }
         });
 
@@ -379,7 +373,7 @@
             signOut(auth).catch(err => console.error("Signout error: ", err));
         };
 
-        // Modal Controls
+        // Modal Controls & Push State
         window.showAddForm = function() {
             document.getElementById('product-form').reset();
             document.getElementById('product-id').value = "";
@@ -391,10 +385,8 @@
             
             document.getElementById('admin-form-overlay').style.display = "flex";
             document.body.style.overflow = "hidden";
-        };
-
-        window.closeFormOnOutsideClick = function(event) {
-            if(event.target.id === 'admin-form-overlay') window.resetForm();
+            
+            history.pushState({ formOpen: true }, ""); 
         };
 
         // WebP Converter Engine
@@ -511,7 +503,8 @@
                     await addDoc(collection(db, "products"), productData);
                     alert("Product added successfully!");
                 }
-                window.resetForm();
+                
+                window.closeModal(); 
                 window.fetchProducts();
             } catch (error) {
                 console.error("Error: ", error);
@@ -547,6 +540,8 @@
             document.getElementById('btn-save').innerText = "Update Product";
             document.getElementById('admin-form-overlay').style.display = "flex";
             document.body.style.overflow = "hidden";
+            
+            history.pushState({ formOpen: true }, ""); 
         };
 
         window.deleteProduct = async function(id) {
@@ -560,7 +555,27 @@
             }
         };
 
-        window.resetForm = function() {
+        // ==========================================
+        // History API & Modal Closing Logic
+        // ==========================================
+        window.addEventListener('popstate', (event) => {
+            const overlay = document.getElementById('admin-form-overlay');
+            if (overlay.style.display === 'flex') {
+                window.forceCloseFormUI();
+            }
+        });
+
+        window.closeModal = function() {
+            history.back(); 
+        };
+
+        window.closeFormOnOutsideClick = function(event) {
+            if(event.target.id === 'admin-form-overlay') {
+                window.closeModal(); 
+            }
+        };
+
+        window.forceCloseFormUI = function() {
             document.getElementById('admin-form-overlay').style.display = "none";
             document.body.style.overflow = "auto";
             document.getElementById('product-form').reset();
