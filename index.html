@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="manifest" href="manifest.json">
     <title>DKB Mall - Admin Console</title>
     
     <link rel="icon" type="image/png" href="favicon.png">
-
+ <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0A2540">
+    <link rel="apple-touch-icon" href="https://via.placeholder.com/192x192/051424/D4AF37?text=DKB">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <style>
         :root {
             --primary-pink: #ff69b4; 
@@ -54,18 +57,30 @@
         .login-box p { color: #888; font-size: 14px; margin-bottom: 20px; }
         .error-msg { color: #ff4444; font-size: 14px; margin-top: 10px; display: none; font-weight: bold; }
 
-        /* Dashboard Styles (Hidden by default) */
+        /* Dashboard Container */
         .container { 
             max-width: 1200px; margin: 30px auto; padding: 0 20px; width: 100%; gap: 30px; flex-wrap: wrap;
-            display: none; /* Initially hidden */
+            display: none; 
         }
 
-        /* Form Panel */
+        /* UPDATED: Form Modal Pop-up Layout */
+        .admin-form-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); z-index: 1000;
+            display: none; justify-content: center; align-items: center; padding: 20px;
+        }
+        
         .admin-panel {
-            background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            flex: 1; min-width: 300px; height: fit-content;
+            background: white; padding: 30px 25px 25px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            width: 100%; max-width: 550px; height: fit-content; max-height: 90dvh; overflow-y: auto;
+            position: relative; animation: fadeIn 0.3s ease-in-out;
         }
         .admin-panel h2 { color: #000080; margin-bottom: 20px; border-bottom: 2px solid var(--light-pink); padding-bottom: 10px; }
+        
+        .close-form-btn {
+            position: absolute; top: 15px; right: 20px; font-size: 28px; color: #aaa; cursor: pointer; font-weight: bold; transition: 0.2s;
+        }
+        .close-form-btn:hover { color: var(--dark-pink); }
         
         .form-group { margin-bottom: 15px; text-align: left; }
         .form-group label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #555; }
@@ -75,24 +90,32 @@
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary-pink); }
         
         .image-preview-container { text-align: center; margin-top: 10px; }
-        .image-preview-container img { max-width: 100%; max-height: 200px; border-radius: 5px; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .image-preview-container img { max-width: 100%; max-height: 180px; border-radius: 5px; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
 
         .btn-submit {
             background: var(--dark-pink); color: white; border: none; padding: 12px; width: 100%;
             border-radius: 5px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 16px; margin-top: 10px;
         }
         .btn-submit:hover { background: #000080; }
-        .btn-cancel {
-            background: #ccc; color: #333; border: none; padding: 12px; width: 100%; margin-top: 10px;
-            border-radius: 5px; font-weight: bold; cursor: pointer; display: none;
+        
+        /* NEW: Add Product Action Button */
+        .table-header-row {
+            display: flex; justify-content: space-between; align-items: center;
+            width: 100%; border-bottom: 2px solid var(--light-pink); padding-bottom: 12px; margin-bottom: 15px;
         }
+        .btn-add-product {
+            background: var(--dark-pink); color: white; border: none; padding: 10px 22px;
+            font-size: 15px; font-weight: bold; border-radius: 25px; cursor: pointer; transition: 0.3s ease;
+            box-shadow: 0 2px 6px rgba(255, 20, 147, 0.2);
+        }
+        .btn-add-product:hover { background: #000080; transform: translateY(-1px); }
 
-        /* Products Table */
+        /* Products Table Panel Layout (Now Full Width) */
         .table-panel {
             background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            flex: 2; min-width: 600px; overflow-x: auto;
+            flex: 1; min-width: 100%; overflow-x: auto;
         }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; vertical-align: middle; }
         th { background: #f8f9fa; color: #000080; }
         
@@ -104,8 +127,10 @@
         
         @media (max-width: 768px) {
             header { flex-direction: column; gap: 15px; text-align: center; }
-            .container { flex-direction: column; display: none; }
-            .table-panel { min-width: 100%; }
+            .header-main h1 { font-size: 34px; }
+            .table-panel { padding: 15px; }
+            th, td { padding: 8px; font-size: 14px; }
+            .btn-add-product { padding: 8px 16px; font-size: 13px; }
         }
     </style>
 </head>
@@ -113,11 +138,6 @@
 
     <header>
         <div class="logo-container">
-            <svg class="site-logo" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <path d="M16 10a4 4 0 0 1-8 0"></path>
-            </svg>
             <h1>DKB Mall Admin</h1>
         </div>
         <div class="header-actions">
@@ -126,7 +146,6 @@
         </div>
     </header>
 
-    <!-- Secure Login Screen -->
     <div class="login-container" id="login-container">
         <div class="login-box">
             <h2>Admin Sign In</h2>
@@ -146,17 +165,40 @@
         </div>
     </div>
 
-    <!-- Admin Dashboard (Hidden behind Auth) -->
     <div class="container" id="admin-dashboard">
-        <!-- Form to Add/Edit Products -->
+        
+        <div class="table-panel">
+            <div class="table-header-row">
+                <h2>Current Inventory <span id="inventory-count" style="font-size:14px; color:gray;">(0 items)</span></h2>
+                <button class="btn-add-product" onclick="window.showAddForm()">+ Add Product</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Image</th>
+                        <th>Title</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="product-list">
+                    <tr><td colspan="5" style="text-align: center;">Loading inventory...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="admin-form-overlay" id="admin-form-overlay" onclick="window.closeFormOnOutsideClick(event)">
         <div class="admin-panel">
+            <span class="close-form-btn" onclick="window.resetForm()">&times;</span>
             <h2 id="form-title">Add New Product</h2>
             <form id="product-form" onsubmit="event.preventDefault(); window.saveProduct();">
                 <input type="hidden" id="product-id">
                 
                 <div class="form-group">
                     <label>Product Title</label>
-                    <input type="text" id="title" required placeholder="E.g., Floral Summer Dress">
+                    <input type="text" id="title" required placeholder="E.g., Ankara Maxi Dress">
                 </div>
                 
                 <div class="form-group">
@@ -208,34 +250,13 @@
                 </div>
                 
                 <button type="submit" id="btn-save" class="btn-submit">Save Product</button>
-                <button type="button" id="btn-cancel" class="btn-cancel" onclick="window.resetForm()">Cancel Edit</button>
             </form>
-        </div>
-
-        <!-- Product List Table -->
-        <div class="table-panel">
-            <h2>Current Inventory <span id="inventory-count" style="font-size:14px; color:gray;">(0 items)</span></h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Image</th>
-                        <th>Title</th>
-                        <th>Category</th>
-                        <th>Price</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="product-list">
-                    <tr><td colspan="5" style="text-align: center;">Loading inventory...</td></tr>
-                </tbody>
-            </table>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        // NEW: Import Firebase Authentication
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
         const firebaseConfig = {
@@ -250,33 +271,33 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const auth = getAuth(app); // Initialize Authentication
+        const auth = getAuth(app); 
         
         let allProducts = [];
 
-        // --- AUTHENTICATION LOGIC ---
+        // PWA Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Admin Service Worker registered!'))
+                    .catch(err => console.log('Service Worker registration failed: ', err));
+            });
+        }
 
-        // Listen for Login State Changes
+        // Authentication Observer
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // User is logged in: Show dashboard, hide login
                 document.getElementById('login-container').style.display = 'none';
                 document.getElementById('admin-dashboard').style.display = 'flex';
                 document.getElementById('btn-logout').style.display = 'block';
                 document.getElementById('dashboard-title').style.display = 'block';
-                
-                // Fetch products only after we know they are logged in
                 window.fetchProducts();
             } else {
-                // User is logged out: Show login, hide dashboard
                 document.getElementById('login-container').style.display = 'flex';
                 document.getElementById('admin-dashboard').style.display = 'none';
                 document.getElementById('btn-logout').style.display = 'none';
                 document.getElementById('dashboard-title').style.display = 'none';
-                
-                // Reset login form text just in case
-                document.getElementById('btn-login-submit').innerText = "Login";
-                document.getElementById('btn-login-submit').disabled = false;
+                window.resetForm();
             }
         });
 
@@ -291,7 +312,6 @@
             errorMsg.style.display = "none";
 
             try {
-                // This will trigger onAuthStateChanged above if successful
                 await signInWithEmailAndPassword(auth, email, password);
             } catch (error) {
                 console.error("Login failed: ", error);
@@ -303,51 +323,57 @@
         };
 
         window.logoutAdmin = function() {
-            signOut(auth).then(() => {
-                document.getElementById('login-form').reset();
-            }).catch((error) => {
-                console.error("Error signing out: ", error);
-            });
+            signOut(auth).catch(err => console.error("Signout error: ", err));
         };
 
-        // --- INVENTORY LOGIC ---
+        // Modal Controls
+        window.showAddForm = function() {
+            document.getElementById('product-form').reset();
+            document.getElementById('product-id').value = "";
+            document.getElementById('base64-image-data').value = "";
+            document.getElementById('img-preview').style.display = "none";
+            document.getElementById('image-status').innerText = "";
+            document.getElementById('form-title').innerText = "Add New Product";
+            document.getElementById('btn-save').innerText = "Save Product";
+            
+            document.getElementById('admin-form-overlay').style.display = "flex";
+            document.body.style.overflow = "hidden";
+        };
 
+        window.closeFormOnOutsideClick = function(event) {
+            if(event.target.id === 'admin-form-overlay') window.resetForm();
+        };
+
+        // WebP Converter Engine
         window.previewAndConvertImage = function(event) {
             const file = event.target.files[0];
             const statusLabel = document.getElementById('image-status');
             
             if (file) {
                 statusLabel.innerText = "Converting to WebP... ⏳";
-                
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const img = new Image();
                     img.onload = function() {
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
-                        
                         const MAX_SIZE = 800;
                         let width = img.width;
                         let height = img.height;
                         
                         if (width > height && width > MAX_SIZE) {
-                            height *= MAX_SIZE / width;
-                            width = MAX_SIZE;
+                            height *= MAX_SIZE / width; width = MAX_SIZE;
                         } else if (height > MAX_SIZE) {
-                            width *= MAX_SIZE / height;
-                            height = MAX_SIZE;
+                            width *= MAX_SIZE / height; height = MAX_SIZE;
                         }
                         
-                        canvas.width = width;
-                        canvas.height = height;
-                        
+                        canvas.width = width; canvas.height = height;
                         ctx.drawImage(img, 0, 0, width, height);
                         const webpBase64 = canvas.toDataURL('image/webp', 0.8);
                         
                         const previewImg = document.getElementById('img-preview');
                         previewImg.src = webpBase64;
                         previewImg.style.display = 'inline-block';
-                        
                         document.getElementById('base64-image-data').value = webpBase64;
                         
                         const sizeKB = Math.round((webpBase64.length * 0.75) / 1024);
@@ -371,9 +397,8 @@
                 });
                 
                 document.getElementById('inventory-count').innerText = `(${allProducts.length} items)`;
-                
                 if(allProducts.length === 0) {
-                    listEl.innerHTML = '<tr><td colspan="5" style="text-align: center;">No products found in database. Add one to get started.</td></tr>';
+                    listEl.innerHTML = '<tr><td colspan="5" style="text-align: center;">No products found. Click "+ Add Product" to get started!</td></tr>';
                     return;
                 }
 
@@ -394,8 +419,8 @@
                     `;
                 });
             } catch (error) {
-                console.error("Error fetching products: ", error);
-                listEl.innerHTML = '<tr><td colspan="5" style="text-align: center; color: red;">Error loading database. Check permissions.</td></tr>';
+                console.error("Error: ", error);
+                listEl.innerHTML = '<tr><td colspan="5" style="text-align: center; color: red;">Error connection framework.</td></tr>';
             }
         };
 
@@ -405,9 +430,7 @@
             btn.disabled = true;
 
             const id = document.getElementById('product-id').value;
-            const sizeString = document.getElementById('sizes').value;
-            const sizeArray = sizeString.split(',').map(s => s.trim()).filter(s => s !== "");
-            
+            const sizeArray = document.getElementById('sizes').value.split(',').map(s => s.trim()).filter(s => s !== "");
             const base64ImageData = document.getElementById('base64-image-data').value;
 
             if (!id && !base64ImageData) {
@@ -435,18 +458,12 @@
                     await addDoc(collection(db, "products"), productData);
                     alert("Product added successfully!");
                 }
-                
                 window.resetForm();
                 window.fetchProducts();
             } catch (error) {
-                console.error("Error saving product: ", error);
-                if (error.message && error.message.includes('maximum')) {
-                     alert("Error: The image file size is too large for the database. Please try another image.");
-                } else {
-                     alert("Error saving product to the database.");
-                }
+                console.error("Error: ", error);
+                alert("Error saving product payload.");
             } finally {
-                btn.innerText = id ? "Update Product" : "Save Product";
                 btn.disabled = false;
             }
         };
@@ -472,12 +489,11 @@
             } else {
                 imgPreview.style.display = 'none';
             }
-            
             document.getElementById('image-status').innerText = "";
 
             document.getElementById('btn-save').innerText = "Update Product";
-            document.getElementById('btn-cancel').style.display = "block";
-            window.scrollTo(0,0);
+            document.getElementById('admin-form-overlay').style.display = "flex";
+            document.body.style.overflow = "hidden";
         };
 
         window.deleteProduct = async function(id) {
@@ -486,29 +502,24 @@
                     await deleteDoc(doc(db, "products", id));
                     window.fetchProducts();
                 } catch (error) {
-                    console.error("Error deleting: ", error);
                     alert("Failed to delete product.");
                 }
             }
         };
 
         window.resetForm = function() {
+            document.getElementById('admin-form-overlay').style.display = "none";
+            document.body.style.overflow = "auto";
             document.getElementById('product-form').reset();
             document.getElementById('product-id').value = "";
             document.getElementById('base64-image-data').value = "";
             document.getElementById('img-preview').style.display = "none";
-            document.getElementById('img-preview').src = "";
             document.getElementById('image-status').innerText = "";
-            document.getElementById('form-title').innerText = "Add New Product";
-            document.getElementById('btn-save').innerText = "Save Product";
-            document.getElementById('btn-cancel').style.display = "none";
         };
-
-        // Register Service Worker for Admin PWA
-        if ('serviceWorker' in navigator) {
+         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('Admin Service Worker registered!'))
+                    .then(reg => console.log('Service Worker registered successfully!'))
                     .catch(err => console.log('Service Worker registration failed: ', err));
             });
         }
