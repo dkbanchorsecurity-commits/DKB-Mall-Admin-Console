@@ -131,11 +131,34 @@
 
         .table-panel {
             background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            flex: 1; min-width: 100%; overflow-x: auto;
+            flex: 1; min-width: 100%;
         }
+
+        /* NEW SCROLL CONTAINER STYLES */
+        .table-scroll-container {
+            max-height: 60vh; 
+            overflow-y: auto;
+            overflow-x: auto;
+            border-radius: 5px;
+            border-bottom: 1px solid #eee;
+        }
+
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; vertical-align: middle; }
-        th { background: #f8f9fa; color: #000080; }
+        
+        /* UPDATED TH STYLES FOR STICKY HEADER */
+        th { 
+            background: #f8f9fa; 
+            color: #000080; 
+            padding: 12px; 
+            text-align: left; 
+            vertical-align: middle;
+            position: sticky; 
+            top: 0; 
+            z-index: 10; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+        }
+        
+        td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; vertical-align: middle; }
         
         .thumbnail { width: 50px; height: 50px; object-fit: cover; border-radius: 5px; background: #eee; }
 
@@ -191,20 +214,24 @@
                 <h2>Current Inventory <span id="inventory-count" style="font-size:14px; color:gray;">(0 items)</span></h2>
                 <button class="btn-add-product" onclick="window.showAddForm()">+ Add Product</button>
             </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Image</th>
-                        <th>Title</th>
-                        <th>Category</th>
-                        <th>Price</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="product-list">
-                    <tr><td colspan="5" style="text-align: center;">Loading inventory...</td></tr>
-                </tbody>
-            </table>
+            
+            <div class="table-scroll-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Image</th>
+                            <th>Title</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="product-list">
+                        <tr><td colspan="5" style="text-align: center;">Loading inventory...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            
         </div>
     </div>
 
@@ -235,7 +262,8 @@
                         <option value="Ladies Bags">Ladies Bags</option>
                         <option value="Accessories">Accessories</option>
                         <option value="Shoes">Shoes</option>
-                        <option value="Wigs">Wigs</option> </select>
+                        <option value="Wigs">Wigs</option> 
+                    </select>
                 </div>
                 
                 <div class="form-group">
